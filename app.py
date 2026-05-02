@@ -2,16 +2,12 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-# -------- PAGE CONFIG --------
+# ---------------- CONFIG ----------------
 st.set_page_config(page_title="AITED System", layout="wide")
 
-# -------- STYLE --------
+# ---------------- STYLE ----------------
 st.markdown("""
 <style>
-body {
-    background-color: #0e1117;
-    color: white;
-}
 [data-testid="stSidebar"] {
     background-color: #111;
 }
@@ -22,25 +18,25 @@ body {
     box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
 }
 .title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -------- SIDEBAR --------
+# ---------------- SIDEBAR ----------------
 st.sidebar.title("🧠 AITED")
-page = st.sidebar.radio("", [
-    "🏠 Dashboard",
-    "➕ New Scan",
-    "📋 Patient Records",
-    "📊 Analytics",
-    "⚙️ Settings"
+page = st.sidebar.radio("Menu", [
+    "Dashboard",
+    "New Scan",
+    "Patient Records",
+    "Analytics",
+    "Settings"
 ])
 
-# -------- DASHBOARD --------
-if page == "🏠 Dashboard":
-    st.title("Dashboard")
+# ---------------- DASHBOARD ----------------
+if page == "Dashboard":
+    st.title("📊 Dashboard")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Scans", "128")
@@ -54,16 +50,15 @@ if page == "🏠 Dashboard":
     st.table({
         "Date": ["30 Apr", "15 Apr"],
         "Risk": ["82%", "55%"],
-        "Result": ["🔴 Suspicious", "🟡 Monitor"]
+        "Result": ["Suspicious", "Monitor"]
     })
 
-# -------- NEW SCAN --------
-elif page == "➕ New Scan":
-    st.title("New Scan")
+# ---------------- NEW SCAN ----------------
+elif page == "New Scan":
+    st.title("🔍 Scan Result")
 
     col1, col2 = st.columns([2,1])
 
-    # Heatmap
     with col1:
         st.subheader("EIT Heatmap")
 
@@ -72,7 +67,7 @@ elif page == "➕ New Scan":
         X, Y = np.meshgrid(x,y)
         Z = np.exp(-(X**2 + Y**2)*3)
 
-        # hotspot (simulate tumor)
+        # จำลองก้อน
         Z += np.exp(-((X-0.3)**2 + (Y+0.2)**2)*20)
 
         fig, ax = plt.subplots()
@@ -81,7 +76,6 @@ elif page == "➕ New Scan":
 
         st.pyplot(fig)
 
-    # AI Panel
     with col2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="title">AI Analysis</div>', unsafe_allow_html=True)
@@ -96,9 +90,9 @@ elif page == "➕ New Scan":
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-# -------- PATIENT RECORDS --------
-elif page == "📋 Patient Records":
-    st.title("Patient Records")
+# ---------------- PATIENT RECORDS ----------------
+elif page == "Patient Records":
+    st.title("📋 Patient Records")
 
     st.table({
         "Name": ["John Doe", "Jane Smith"],
@@ -106,9 +100,9 @@ elif page == "📋 Patient Records":
         "Status": ["Suspicious", "Normal"]
     })
 
-# -------- ANALYTICS --------
-elif page == "📊 Analytics":
-    st.title("Analytics")
+# ---------------- ANALYTICS ----------------
+elif page == "Analytics":
+    st.title("📊 Model Performance")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Sensitivity", "91%")
@@ -117,19 +111,17 @@ elif page == "📊 Analytics":
 
     st.subheader("Confusion Matrix")
     st.table({
-        "": ["Actual Normal", "Actual Cancer"],
-        "Pred Normal": ["80", "10"],
-        "Pred Cancer": ["20", "90"]
+        "Actual": ["Normal", "Cancer"],
+        "Predicted": ["80", "90"]
     })
 
-# -------- SETTINGS --------
-elif page == "⚙️ Settings":
-    st.title("Settings")
+# ---------------- SETTINGS ----------------
+elif page == "Settings":
+    st.title("⚙️ Settings")
 
-    device = st.selectbox("Device", ["AITED Collar v1"])
-    freq = st.selectbox("Frequency", ["50 kHz", "100 kHz"])
-    current = st.slider("Current (mA)", 0.5, 2.0, 1.0)
+    st.selectbox("Device", ["AITED Collar v1"])
+    st.selectbox("Frequency", ["50 kHz", "100 kHz"])
+    st.slider("Current (mA)", 0.5, 2.0, 1.0)
 
     if st.button("Save Settings"):
-        st.success("Settings saved!")    st.button("Save Settings")   "Pred Cancer": ["20", "90"]
-    })
+        st.success("Settings saved!")
