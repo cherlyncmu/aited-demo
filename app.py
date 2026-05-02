@@ -2,65 +2,128 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="AITED System", layout="wide")
 
-# Sidebar menu
-page = st.sidebar.radio("Menu", ["Scan", "Dashboard", "Model Performance"])
+# ---------- STYLE ----------
+st.markdown("""
+<style>
+body {
+    background-color: #0e1117;
+    color: white;
+}
+[data-testid="stSidebar"] {
+    background-color: #111;
+}
+.card {
+    background-color: #1c1f26;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+}
+.title {
+    font-size: 26px;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# ---------------- SCAN PAGE ----------------
-if page == "Scan":
-    st.title("🔍 Thyroid Scan Result")
+# ---------- SIDEBAR ----------
+st.sidebar.title("🧠 AITED")
+page = st.sidebar.radio("", [
+    "🏠 Dashboard",
+    "➕ New Scan",
+    "📋 Patient Records",
+    "📊 Analytics",
+    "⚙️ Settings"
+])
+
+# ---------- DASHBOARD ----------
+if page == "🏠 Dashboard":
+    st.title("Dashboard")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Scans", "128")
+    col2.metric("Suspicious", "32")
+    col3.metric("Normal", "76")
+
+    st.subheader("📈 Risk Trend")
+    st.line_chart([30, 55, 82, 60, 75])
+
+    st.subheader("Recent Scans")
+    st.table({
+        "Date": ["30 Apr", "15 Apr"],
+        "Risk": ["82%", "55%"],
+        "Result": ["🔴 Suspicious", "🟡 Monitor"]
+    })
+
+# ---------- NEW SCAN ----------
+elif page == "➕ New Scan":
+    st.title("New Scan")
 
     col1, col2 = st.columns([2,1])
 
-    # Heatmap
     with col1:
         st.subheader("EIT Heatmap")
-        data = np.random.rand(100, 100)
+
+        x = np.linspace(-1,1,200)
+        y = np.linspace(-1,1,200)
+        X, Y = np.meshgrid(x,y)
+        Z = np.exp(-(X**2 + Y**2)*3)
+
+        # hotspot
+        Z += np.exp(-((X-0.3)**2 + (Y+0.2)**2)*20)
 
         fig, ax = plt.subplots()
-        ax.imshow(data, cmap='jet')
+        ax.imshow(Z, cmap='jet')
         ax.axis('off')
-
         st.pyplot(fig)
 
-    # Result panel
     with col2:
-        st.subheader("AI Analysis")
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<div class="title">AI Analysis</div>', unsafe_allow_html=True)
+
         st.metric("Risk Score", "82%")
         st.error("⚠️ Suspicious")
 
-        st.write("📍 Location: Right Lobe")
-        st.write("📏 Size: ~1.2 cm")
-        st.warning("Recommend further ultrasound examination")
+        st.write("📍 Right Lobe")
+        st.write("📏 ~1.2 cm")
 
-# ---------------- DASHBOARD ----------------
-if page == "Dashboard":
-    st.title("📊 Dashboard")
+        st.warning("Recommend ultrasound")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.subheader("Scan History")
+# ---------- PATIENT ----------
+elif page == "📋 Patient Records":
+    st.title("Patient Records")
+
     st.table({
-        "Date": ["01/04/26", "15/04/26", "30/04/26"],
-        "Risk": ["30%", "55%", "82%"],
-        "Result": ["Normal", "Monitor", "Suspicious"]
+        "Name": ["John Doe", "Jane Smith"],
+        "Last Scan": ["30 Apr", "15 Apr"],
+        "Status": ["Suspicious", "Normal"]
     })
 
-    st.subheader("Risk Trend")
-    st.line_chart([30, 55, 82])
-
-# ---------------- MODEL PERFORMANCE ----------------
-if page == "Model Performance":
-    st.title("🧪 Model Performance")
+# ---------- ANALYTICS ----------
+elif page == "📊 Analytics":
+    st.title("Analytics")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Sensitivity", "91%")
     col2.metric("Specificity", "76%")
-    col3.metric("F1-score", "0.83")
+    col3.metric("F1 Score", "0.83")
 
     st.subheader("Confusion Matrix")
     st.table({
         "": ["Actual Normal", "Actual Cancer"],
         "Pred Normal": ["80", "10"],
         "Pred Cancer": ["20", "90"]
+    })
+
+# ---------- SETTINGS ----------
+elif page == "⚙️ Settings":
+    st.title("Settings")
+
+    st.selectbox("Device", ["AITED Collar v1"])
+    st.selectbox("Frequency", ["50 kHz", "100 kHz"])
+    st.slider("Current (mA)", 0.5, 2.0, 1.0)
+
+    st.button("Save Settings")   "Pred Cancer": ["20", "90"]
     })
