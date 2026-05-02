@@ -19,26 +19,27 @@ def load_image():
     img = Image.open("sample_ultrasound.jpg").convert("L")
     return np.array(img)
 
-# ---------------- SIMULATE DETECTION ----------------
+# ---------------- DETECT (DEMO) ----------------
 def detect(img):
     h, w = img.shape
 
-    x = random.randint(int(h*0.3), int(h*0.7))
-    y = random.randint(int(w*0.3), int(w*0.7))
+    x = random.randint(int(h * 0.3), int(h * 0.7))
+    y = random.randint(int(w * 0.3), int(w * 0.7))
     r = random.randint(20, 40)
 
     risk = random.randint(60, 90)
 
-    if x < h/3:
+    # location
+    if x < h / 3:
         v = "Upper"
-    elif x < 2*h/3:
+    elif x < 2 * h / 3:
         v = "Middle"
     else:
         v = "Lower"
 
-    if y < w/3:
+    if y < w / 3:
         hpos = "Left"
-    elif y < 2*w/3:
+    elif y < 2 * w / 3:
         hpos = "Center"
     else:
         hpos = "Right"
@@ -90,9 +91,9 @@ if page == "Dashboard":
 elif page == "Scan":
     st.title("🔍 Ultrasound AI Scan")
 
-    col1, col2 = st.columns([2,1])
+    col1, col2 = st.columns([2, 1])
 
-    # -------- LEFT --------
+    # LEFT SIDE
     with col1:
         if st.button("▶ Start Scan"):
             st.session_state.scanning = True
@@ -104,7 +105,7 @@ elif page == "Scan":
 
             for i in range(100):
                 time.sleep(0.01)
-                progress.progress(i+1)
+                progress.progress(i + 1)
                 status.text(f"Scanning... {i+1}%")
 
             st.success("Scan Complete")
@@ -116,7 +117,6 @@ elif page == "Scan":
             fig, ax = plt.subplots()
             ax.imshow(img, cmap='gray')
 
-            # 🔴 วงก้อน
             circle = plt.Circle((y, x), r, color='red', fill=False, linewidth=2)
             ax.add_patch(circle)
 
@@ -130,7 +130,7 @@ elif page == "Scan":
                 "y": y
             }
 
-    # -------- RIGHT --------
+    # RIGHT SIDE
     with col2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="big">AI Diagnosis</div>', unsafe_allow_html=True)
@@ -142,13 +142,12 @@ elif page == "Scan":
             st.error("⚠️ Suspicious")
 
             st.write("📍 Location")
-            st.write(f"{r['location']}")
+            st.write(r["location"])
 
             st.write("📌 Coordinates")
             st.write(f"X={r['x']}  Y={r['y']}")
 
             st.write("📏 Size ~1 cm")
-
         else:
             st.info("No scan yet")
 
@@ -174,9 +173,4 @@ elif page == "Analytics":
     c2.metric("Specificity", "76%")
     c3.metric("F1 Score", "0.83")
 
-    st.bar_chart([91, 76, 83])    st.title("🧪 Model Evaluation")
-
-    st.metric("Sensitivity", "91%")
-    st.metric("Specificity", "76%")
-
-    st.bar_chart([91, 76])
+    st.bar_chart([91, 76, 83])
