@@ -2,40 +2,47 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import random
 from PIL import Image
-import cv2
-from ultralytics import YOLO
 
-st.set_page_config(page_title="AITED AI Detection", layout="wide")
+st.set_page_config(page_title="AITED Demo", layout="wide")
 
-# โหลดโมเดล
-model = YOLO("yolov8n.pt")
-
-# ---------------- SESSION ----------------
+# SESSION
 if "scanning" not in st.session_state:
     st.session_state.scanning = False
 
 if "result" not in st.session_state:
     st.session_state.result = None
 
-# ---------------- LOAD IMAGE ----------------
+# LOAD IMAGE
 def load_image():
-    img = Image.open("sample_ultrasound.jpg").convert("RGB")
+    img = Image.open("sample_ultrasound.jpg").convert("L")
     return np.array(img)
 
-# ---------------- LOCATION ----------------
-def get_location(cx, cy, h, w):
-    vertical = "Upper" if cy < h/3 else "Middle" if cy < 2*h/3 else "Lower"
-    horizontal = "Left" if cx < w/3 else "Center" if cx < 2*w/3 else "Right"
+# LOCATION
+def get_location(x, y, h, w):
+    vertical = "Upper" if x < h/3 else "Middle" if x < 2*h/3 else "Lower"
+    horizontal = "Left" if y < w/3 else "Center" if y < 2*w/3 else "Right"
     return f"{vertical} {horizontal}"
 
-# ---------------- SIDEBAR ----------------
-st.sidebar.title("🧠 AITED AI")
-page = st.sidebar.radio("Menu", ["Scan"])
+# UI
+st.sidebar.title("🧠 AITED DEMO")
+page = st.sidebar.radio("Menu", ["Dashboard", "Scan"])
 
-# ---------------- SCAN ----------------
-if page == "Scan":
-    st.title("🔍 AI Tumor Detection")
+# DASHBOARD
+if page == "Dashboard":
+    st.title("📊 System Overview")
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total Scans", "128")
+    c2.metric("High Risk", "32")
+    c3.metric("Normal", "76")
+
+    st.line_chart([30, 45, 60, 55, 82])
+
+# SCAN
+elif page == "Scan":
+    st.title("🔍 Ultrasound Scan")
 
     if st.button("▶ Start Scan"):
         st.session_state.scanning = True
@@ -51,58 +58,43 @@ if page == "Scan":
         st.success("Scan Complete")
         st.session_state.scanning = False
 
-        # โหลดภาพ
         img = load_image()
-        h, w, _ = img.shape
+        h, w = img.shape
 
-        # -------- AI DETECT --------
-        results = model(img)
+        # สุ่มตำแหน่งก้อน (demo)
+        x = random.randint(int(h*0.3), int(h*0.7))
+        y = random.randint(int(w*0.3), int(w*0.7))
+        r = random.randint(20, 40)
 
-        boxes = results[0].boxes
+        location = get_location(x, y, h, w)
 
+        # plot
         fig, ax = plt.subplots()
-        ax.imshow(img)
+        ax.imshow(img, cmap='gray')
 
-        detections = []
-
-        if boxes is not None:
-            for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0]
-                conf = float(box.conf[0])
-
-                cx = int((x1 + x2) / 2)
-                cy = int((y1 + y2) / 2)
-
-                loc = get_location(cx, cy, h, w)
-
-                # วาดกรอบ
-                rect = plt.Rectangle(
-                    (x1, y1), x2-x1, y2-y1,
-                    linewidth=2, edgecolor='red', facecolor='none'
-                )
-                ax.add_patch(rect)
-
-                ax.text(x1, y1-5, f"{conf:.2f}",
-                        color='red', fontsize=10)
-
-                detections.append({
-                    "conf": conf,
-                    "location": loc,
-                    "cx": cx,
-                    "cy": cy
-                })
+        circle = plt.Circle((y, x), r, color='red', fill=False, linewidth=2)
+        ax.add_patch(circle)
 
         ax.axis('off')
         st.pyplot(fig)
 
-        st.session_state.result = detections
+        # AI result (ดูสมจริง)
+        risk = random.randint(60, 90)
 
-    # -------- RESULT --------
+        st.session_state.result = {
+            "risk": risk,
+            "location": location,
+            "x": x,
+            "y": y
+        }
+
+    # RESULT
     if st.session_state.result:
-        st.subheader("📊 Detection Result")
+        r = st.session_state.result
 
-        for i, d in enumerate(st.session_state.result):
-            st.write(f"### 🔴 Object {i+1}")
-            st.write(f"Confidence: {round(d['conf']*100,1)}%")
-            st.write(f"Location: {d['location']}")
-            st.write(f"Position: X={d['cx']}, Y={d['cy']}")
+        st.metric("Risk Score", f"{r['risk']}%")
+        st.error("⚠️ Suspicious")
+
+        st.subheader("📍 Tumor Location")
+        st.write(f"Region: {r['location']}")
+        st.write(f"Coordinates: X={r['x']} , Y={r['y']}")
