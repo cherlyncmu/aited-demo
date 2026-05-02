@@ -2,9 +2,10 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
+# -------- PAGE CONFIG --------
 st.set_page_config(page_title="AITED System", layout="wide")
 
-# ---------- STYLE ----------
+# -------- STYLE --------
 st.markdown("""
 <style>
 body {
@@ -21,13 +22,13 @@ body {
     box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
 }
 .title {
-    font-size: 26px;
+    font-size: 22px;
     font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- SIDEBAR ----------
+# -------- SIDEBAR --------
 st.sidebar.title("🧠 AITED")
 page = st.sidebar.radio("", [
     "🏠 Dashboard",
@@ -37,7 +38,7 @@ page = st.sidebar.radio("", [
     "⚙️ Settings"
 ])
 
-# ---------- DASHBOARD ----------
+# -------- DASHBOARD --------
 if page == "🏠 Dashboard":
     st.title("Dashboard")
 
@@ -56,12 +57,13 @@ if page == "🏠 Dashboard":
         "Result": ["🔴 Suspicious", "🟡 Monitor"]
     })
 
-# ---------- NEW SCAN ----------
+# -------- NEW SCAN --------
 elif page == "➕ New Scan":
     st.title("New Scan")
 
     col1, col2 = st.columns([2,1])
 
+    # Heatmap
     with col1:
         st.subheader("EIT Heatmap")
 
@@ -70,14 +72,16 @@ elif page == "➕ New Scan":
         X, Y = np.meshgrid(x,y)
         Z = np.exp(-(X**2 + Y**2)*3)
 
-        # hotspot
+        # hotspot (simulate tumor)
         Z += np.exp(-((X-0.3)**2 + (Y+0.2)**2)*20)
 
         fig, ax = plt.subplots()
         ax.imshow(Z, cmap='jet')
         ax.axis('off')
+
         st.pyplot(fig)
 
+    # AI Panel
     with col2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="title">AI Analysis</div>', unsafe_allow_html=True)
@@ -85,13 +89,14 @@ elif page == "➕ New Scan":
         st.metric("Risk Score", "82%")
         st.error("⚠️ Suspicious")
 
-        st.write("📍 Right Lobe")
-        st.write("📏 ~1.2 cm")
+        st.write("📍 Location: Right Lobe")
+        st.write("📏 Size: ~1.2 cm")
 
-        st.warning("Recommend ultrasound")
+        st.warning("Recommend ultrasound examination")
+
         st.markdown('</div>', unsafe_allow_html=True)
 
-# ---------- PATIENT ----------
+# -------- PATIENT RECORDS --------
 elif page == "📋 Patient Records":
     st.title("Patient Records")
 
@@ -101,7 +106,7 @@ elif page == "📋 Patient Records":
         "Status": ["Suspicious", "Normal"]
     })
 
-# ---------- ANALYTICS ----------
+# -------- ANALYTICS --------
 elif page == "📊 Analytics":
     st.title("Analytics")
 
@@ -117,13 +122,14 @@ elif page == "📊 Analytics":
         "Pred Cancer": ["20", "90"]
     })
 
-# ---------- SETTINGS ----------
+# -------- SETTINGS --------
 elif page == "⚙️ Settings":
     st.title("Settings")
 
-    st.selectbox("Device", ["AITED Collar v1"])
-    st.selectbox("Frequency", ["50 kHz", "100 kHz"])
-    st.slider("Current (mA)", 0.5, 2.0, 1.0)
+    device = st.selectbox("Device", ["AITED Collar v1"])
+    freq = st.selectbox("Frequency", ["50 kHz", "100 kHz"])
+    current = st.slider("Current (mA)", 0.5, 2.0, 1.0)
 
-    st.button("Save Settings")   "Pred Cancer": ["20", "90"]
+    if st.button("Save Settings"):
+        st.success("Settings saved!")    st.button("Save Settings")   "Pred Cancer": ["20", "90"]
     })
