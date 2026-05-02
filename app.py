@@ -1,40 +1,26 @@
 import streamlit as st
-... import numpy as np
-... import matplotlib.pyplot as plt
-... 
-... st.set_page_config(page_title="AITED System", layout="wide")
-... 
-... # Sidebar
-... st.sidebar.title("🧠 AITED")
-... page = st.sidebar.radio("Menu", ["Scan", "Dashboard", "Model Performance"])
-... 
-... # ---------------- SCAN PAGE ----------------
-... if page == "Scan":
-...     st.title("🔍 Thyroid Scan Result")
-... 
-...     col1, col2 = st.columns([2,1])
-... 
-...     # Heatmap (Demo)
-...     with col1:
-...         st.subheader("EIT Heatmap")
-...         data = np.random.rand(100,100)
-... 
-...         fig, ax = plt.subplots()
-...         im = ax.imshow(data, cmap='jet')
-...         ax.axis('off')
-...         plt.colorbar(im, ax=ax)
-...         st.pyplot(fig)
-... 
-...     # Info Panel
-...     with col2:
-...         st.subheader("AI Analysis")
-...         st.metric("Risk Score", "82%")
-...         st.error("Status: Suspicious")
-... 
-...         st.write("📍 Location: Right Lobe")
-...         st.write("📏 Size: ~1.2 cm")
-... 
-...         st.warning("⚠️ Recommend further ultrasound examination")
+import numpy as np
+import matplotlib.pyplot as plt
+
+st.set_page_config(page_title="AITED Demo", layout="wide")
+
+st.title("🧠 AITED - Thyroid Screening")
+
+col1, col2 = st.columns([2,1])
+
+with col1:
+    st.subheader("EIT Heatmap")
+    data = np.random.rand(100,100)
+    fig, ax = plt.subplots()
+    ax.imshow(data, cmap='jet')
+    ax.axis('off')
+    st.pyplot(fig)
+
+with col2:
+    st.metric("Risk Score", "82%")
+    st.error("Suspicious")
+    st.write("📍 Location: Right Lobe")
+    st.write("📏 Size: 1.2 cm")
 
 # ---------------- DASHBOARD ----------------
 elif page == "Dashboard":
