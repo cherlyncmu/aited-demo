@@ -3,138 +3,181 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import random
-from PIL import Image
 
-st.set_page_config(page_title="AITED Medical AI", layout="wide")
+st.set_page_config(page_title="AITED Medical System", layout="wide")
 
 # ---------------- SESSION ----------------
+if "connected" not in st.session_state:
+    st.session_state.connected = False
+
 if "scanning" not in st.session_state:
     st.session_state.scanning = False
 
 if "result" not in st.session_state:
     st.session_state.result = None
 
-# ---------------- LOAD IMAGE ----------------
-def load_image():
-    img = Image.open("sample_ultrasound.jpg").convert("L")
-    return np.array(img)
+# ---------------- FAKE SENSOR (แทน hardware) ----------------
+def get_sensor_data():
+    # จำลองข้อมูลจากปลอกคอ
+    return np.random.rand(16)
 
-# ---------------- DETERMINE LOCATION ----------------
-def get_location(x, y, h, w):
-    if x < h/3:
-        vertical = "Upper"
-    elif x < 2*h/3:
-        vertical = "Middle"
+# ---------------- AI MODEL (ไม่ random ล้วน) ----------------
+def analyze(data):
+    score = np.mean(data)
+
+    if score > 0.65:
+        risk = 85
+        status = "⚠️ Suspicious"
+    elif score > 0.4:
+        risk = 55
+        status = "🟡 Monitor"
     else:
-        vertical = "Lower"
+        risk = 20
+        status = "🟢 Normal"
 
-    if y < w/3:
-        horizontal = "Left"
-    elif y < 2*w/3:
-        horizontal = "Center"
-    else:
-        horizontal = "Right"
+    return risk, status
 
-    return f"{vertical} {horizontal}"
+# ---------------- FUNCTIONS ----------------
+def connect_device():
+    with st.spinner("Connecting to AITED Collar..."):
+        time.sleep(2)
+    st.session_state.connected = True
 
-# ---------------- AI ----------------
-def analyze(img):
-    score = np.mean(img)
+def disconnect_device():
+    st.session_state.connected = False
 
-    if score > 130:
-        return 85, "⚠️ Suspicious"
-    elif score > 100:
-        return 55, "🟡 Monitor"
-    else:
-        return 20, "🟢 Normal"
+def start_scan():
+    st.session_state.scanning = True
+    st.session_state.result = None
+
+# ---------------- STYLE ----------------
+st.markdown("""
+<style>
+[data-testid="stSidebar"] {background-color: #020617;}
+.block {
+    background: #020617;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #1e293b;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ---------------- SIDEBAR ----------------
-st.sidebar.title("🧠 AITED AI")
-page = st.sidebar.radio("Menu", ["Dashboard", "Scan", "Analytics"])
+st.sidebar.title("🧠 AITED SYSTEM")
 
-# ---------------- DASHBOARD ----------------
-if page == "Dashboard":
-    st.title("📊 Overview")
+st.sidebar.subheader("🔌 Device")
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Scans", "128")
-    c2.metric("High Risk", "32")
-    c3.metric("Normal", "76")
+if st.session_state.connected:
+    st.sidebar.success("🟢 CONNECTED")
+    if st.sidebar.button("Disconnect"):
+        disconnect_device()
+else:
+    st.sidebar.error("🔴 DISCONNECTED")
+    if st.sidebar.button("Connect Device"):
+        connect_device()
 
-    st.line_chart([30, 45, 60, 55, 82])
+page = st.sidebar.radio("MODE", ["Monitor", "Scan", "Records", "Analytics"])
+
+# ---------------- MONITOR (เหมือนเครื่องจริง) ----------------
+if page == "Monitor":
+    st.title("📡 Real-time Monitoring")
+
+    if not st.session_state.connected:
+        st.warning("Connect device to start monitoring")
+        st.stop()
+
+    chart = st.empty()
+
+    for _ in range(30):
+        data = get_sensor_data()
+        chart.line_chart(data)
+        time.sleep(0.2)
 
 # ---------------- SCAN ----------------
 elif page == "Scan":
-    st.title("🔍 Ultrasound Scan")
+    st.title("🔍 Diagnostic Scan")
 
-    if st.button("▶ Start Scan"):
-        st.session_state.scanning = True
-        st.session_state.result = None
+    if not st.session_state.connected:
+        st.warning("⚠️ Connect device first")
+        st.stop()
 
-    if st.session_state.scanning:
-        progress = st.progress(0)
+    col1, col2 = st.columns([2,1])
 
-        for i in range(100):
-            time.sleep(0.01)
-            progress.progress(i+1)
+    with col1:
+        if st.button("▶ Start Scan"):
+            start_scan()
 
-        st.success("Scan Complete")
-        st.session_state.scanning = False
+        if st.session_state.scanning:
+            progress = st.progress(0)
 
-        # โหลดภาพ
-        img = load_image()
-        h, w = img.shape
+            for i in range(100):
+                time.sleep(0.01)
+                progress.progress(i + 1)
 
-        # สุ่มตำแหน่งก้อน
-        x = random.randint(int(h*0.3), int(h*0.7))
-        y = random.randint(int(w*0.3), int(w*0.7))
-        r = random.randint(20, 40)
+            st.success("Scan Complete")
+            st.session_state.scanning = False
 
-        location = get_location(x, y, h, w)
+            # รับข้อมูลจาก sensor
+            sensor_data = get_sensor_data()
 
-        # plot
-        fig, ax = plt.subplots()
-        ax.imshow(img, cmap='gray')
+            # วิเคราะห์
+            risk, status = analyze(sensor_data)
 
-        circle = plt.Circle((y, x), r, color='red', fill=False, linewidth=2)
-        ax.add_patch(circle)
+            # สร้างภาพ
+            x = np.linspace(-1,1,200)
+            y = np.linspace(-1,1,200)
+            X, Y = np.meshgrid(x,y)
 
-        ax.axis('off')
-        st.pyplot(fig)
+            Z = np.exp(-(X**2 + Y**2)*3)
 
-        # AI
-        risk, status = analyze(img)
+            tx, ty = random.uniform(-0.4,0.4), random.uniform(-0.4,0.4)
+            Z += np.exp(-((X-tx)**2 + (Y-ty)**2)*25)
 
-        st.session_state.result = {
-            "risk": risk,
-            "status": status,
-            "location": location,
-            "x": x,
-            "y": y
-        }
+            fig, ax = plt.subplots()
+            ax.imshow(Z, cmap='jet')
 
-    # -------- RESULT --------
-    if st.session_state.result:
-        r = st.session_state.result
+            circle = plt.Circle(((tx+1)*100,(ty+1)*100),20,
+                                color='red', fill=False, linewidth=2)
+            ax.add_patch(circle)
 
-        st.metric("Risk Score", f"{r['risk']}%")
+            ax.axis('off')
+            st.pyplot(fig)
 
-        if "Suspicious" in r["status"]:
-            st.error(r["status"])
-        elif "Monitor" in r["status"]:
-            st.warning(r["status"])
+            st.session_state.result = {
+                "risk": risk,
+                "status": status
+            }
+
+    with col2:
+        st.markdown("### AI RESULT")
+
+        if st.session_state.result:
+            r = st.session_state.result
+            st.metric("Risk", f"{r['risk']}%")
+
+            if "Suspicious" in r["status"]:
+                st.error(r["status"])
+            elif "Monitor" in r["status"]:
+                st.warning(r["status"])
+            else:
+                st.success(r["status"])
         else:
-            st.success(r["status"])
+            st.info("No data")
 
-        st.subheader("📍 Tumor Location")
-        st.write(f"Region: **{r['location']}**")
-        st.write(f"Coordinates: X={r['x']} , Y={r['y']}")
+# ---------------- RECORDS ----------------
+elif page == "Records":
+    st.title("📋 Patient Records")
 
-        st.write("📏 Estimated size: ~1 cm")
+    st.dataframe({
+        "Patient": ["A", "B"],
+        "Risk": ["85%", "20%"],
+        "Status": ["Suspicious", "Normal"]
+    })
 
 # ---------------- ANALYTICS ----------------
 elif page == "Analytics":
-    st.title("🧪 Model Performance")
+    st.title("🧪 Model Evaluation")
 
     st.metric("Sensitivity", "91%")
     st.metric("Specificity", "76%")
