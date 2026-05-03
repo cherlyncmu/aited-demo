@@ -3,67 +3,86 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import random
+from PIL import Image
 
-st.set_page_config(page_title="AITED Medical System", layout="wide")
+st.set_page_config(page_title="AITED Medical AI", layout="wide")
 
 # ---------------- SESSION ----------------
-if "connected" not in st.session_state:
-    st.session_state.connected = False
-
 if "scanning" not in st.session_state:
     st.session_state.scanning = False
 
 if "result" not in st.session_state:
     st.session_state.result = None
 
-# ---------------- FUNCTIONS ----------------
-def connect_device():
-    with st.spinner("Connecting..."):
-        time.sleep(2)
-    st.session_state.connected = True
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-def disconnect_device():
-    st.session_state.connected = False
+# ---------------- LOAD IMAGE ----------------
+def load_image():
+    img = Image.open("sample_ultrasound.jpg").convert("L")
+    return np.array(img)
 
-def start_scan():
-    st.session_state.scanning = True
-    st.session_state.result = None
+# ---------------- DETECT ----------------
+def detect(img):
+    h, w = img.shape
+
+    x = random.randint(int(h*0.3), int(h*0.7))
+    y = random.randint(int(w*0.3), int(w*0.7))
+    r = random.randint(20, 40)
+
+    risk = random.randint(60, 90)
+
+    if x < h/3:
+        v = "Upper"
+    elif x < 2*h/3:
+        v = "Middle"
+    else:
+        v = "Lower"
+
+    if y < w/3:
+        hpos = "Left"
+    elif y < 2*w/3:
+        hpos = "Center"
+    else:
+        hpos = "Right"
+
+    location = f"{v} {hpos}"
+
+    return x, y, r, risk, location
 
 # ---------------- STYLE ----------------
 st.markdown("""
 <style>
-[data-testid="stSidebar"] {background-color: #020617;}
+[data-testid="stSidebar"] {
+    background-color: #020617;
+}
 .card {
     background: #0f172a;
     padding: 20px;
     border-radius: 15px;
-    border: 1px solid #1e293b;
+    margin-bottom: 15px;
 }
-.big {font-size: 22px; font-weight: bold;}
-.scanbox {
-    border: 2px solid #22c55e;
-    border-radius: 10px;
-    padding: 10px;
+.big {
+    font-size: 20px;
+    font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- SIDEBAR ----------------
-st.sidebar.title("🧠 AITED")
+st.sidebar.title("🧠 AITED SYSTEM")
 
-st.sidebar.subheader("🔌 Device")
+status = "🟢 READY"
+if st.session_state.scanning:
+    status = "🟡 SCANNING"
 
-if st.session_state.connected:
-    st.sidebar.success("🟢 Connected")
-    if st.sidebar.button("Disconnect"):
-        disconnect_device()
-else:
-    st.sidebar.error("🔴 Disconnected")
-    if st.sidebar.button("Connect Device"):
-        connect_device()
+st.sidebar.markdown(f"**System Status:** {status}")
 
-page = st.sidebar.radio("Navigation", [
-    "Dashboard", "Scan", "Patients", "Analytics"
+page = st.sidebar.radio("Menu", [
+    "Dashboard",
+    "Scan",
+    "Patients",
+    "Analytics"
 ])
 
 # ---------------- DASHBOARD ----------------
@@ -71,92 +90,61 @@ if page == "Dashboard":
     st.title("📊 System Overview")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Total Scans", "128")
-    c2.metric("High Risk", "32")
-    c3.metric("Normal", "76")
+    c1.metric("Total Scans", len(st.session_state.history))
+    c2.metric("High Risk", sum(1 for h in st.session_state.history if h["risk"] > 70))
+    c3.metric("Normal", sum(1 for h in st.session_state.history if h["risk"] <= 70))
 
-    st.line_chart([30, 45, 60, 55, 82])
+    st.subheader("📈 Risk Trend")
+    if st.session_state.history:
+        st.line_chart([h["risk"] for h in st.session_state.history])
+    else:
+        st.info("No data yet")
 
 # ---------------- SCAN ----------------
 elif page == "Scan":
-    st.title("🔍 Live Scan")
-
-    if not st.session_state.connected:
-        st.warning("⚠️ Connect device first")
-        st.stop()
+    st.title("🔍 Ultrasound AI Scan")
 
     col1, col2 = st.columns([2,1])
 
-    # -------- LEFT: SCAN --------
     with col1:
-        st.markdown('<div class="scanbox">', unsafe_allow_html=True)
-
-        if not st.session_state.scanning:
-            if st.button("▶ Start Scan"):
-                start_scan()
+        if st.button("▶ Start Scan"):
+            st.session_state.scanning = True
+            st.session_state.result = None
 
         if st.session_state.scanning:
             progress = st.progress(0)
-            status = st.empty()
+            status_text = st.empty()
 
             for i in range(100):
-                time.sleep(0.015)
-                progress.progress(i + 1)
-                status.text(f"Scanning... {i+1}%")
+                time.sleep(0.01)
+                progress.progress(i+1)
+                status_text.text(f"Scanning... {i+1}%")
 
             st.success("Scan Complete")
             st.session_state.scanning = False
 
-            # -------- CREATE DATA --------
-            x = np.linspace(-1,1,200)
-            y = np.linspace(-1,1,200)
-            X, Y = np.meshgrid(x,y)
+            img = load_image()
+            x, y, r, risk, location = detect(img)
 
-            Z = np.exp(-(X**2 + Y**2)*3)
-
-            # random tumor
-            tx, ty = random.uniform(-0.5,0.5), random.uniform(-0.5,0.5)
-            Z += np.exp(-((X-tx)**2 + (Y-ty)**2)*25)
-
-            # -------- PLOT --------
             fig, ax = plt.subplots()
-            ax.imshow(Z, cmap='jet')
+            ax.imshow(img, cmap='gray')
 
-            # 🔴 highlight tumor
-            circle = plt.Circle(
-                ((tx+1)*100, (ty+1)*100),
-                20,
-                color='red',
-                fill=False,
-                linewidth=2
-            )
+            circle = plt.Circle((y, x), r, color='red', fill=False, linewidth=2)
             ax.add_patch(circle)
 
-            ax.set_title("EIT Imaging")
             ax.axis('off')
-
             st.pyplot(fig)
 
-            # -------- AI RESULT --------
-            risk = random.randint(40, 95)
-
-            if risk > 70:
-                status_text = "⚠️ Suspicious"
-            elif risk > 40:
-                status_text = "🟡 Monitor"
-            else:
-                status_text = "🟢 Normal"
-
-            st.session_state.result = {
+            result = {
                 "risk": risk,
-                "status": status_text,
-                "x": tx,
-                "y": ty
+                "location": location,
+                "x": x,
+                "y": y
             }
 
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.session_state.result = result
+            st.session_state.history.append(result)
 
-    # -------- RIGHT: RESULT --------
     with col2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="big">AI Diagnosis</div>', unsafe_allow_html=True)
@@ -166,37 +154,56 @@ elif page == "Scan":
 
             st.metric("Risk Score", f"{r['risk']}%")
 
-            if "Suspicious" in r["status"]:
-                st.error(r["status"])
-            elif "Monitor" in r["status"]:
-                st.warning(r["status"])
+            if r["risk"] > 70:
+                st.error("⚠️ Suspicious")
             else:
-                st.success(r["status"])
+                st.success("🟢 Normal")
 
-            st.write("📍 Detected Region")
-            st.write(f"📌 X: {round(r['x'],2)}  Y: {round(r['y'],2)}")
+            st.write("📍 Location")
+            st.write(r["location"])
 
-            st.write("📏 Estimated size: ~1 cm")
+            st.write("📌 Coordinates")
+            st.write(f"X={r['x']}  Y={r['y']}")
 
+            st.write("📏 Size ~1 cm")
         else:
             st.info("No scan yet")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # REPORT
+    if st.session_state.result:
+        r = st.session_state.result
+
+        st.subheader("📄 Diagnostic Report")
+
+        st.write("**Findings:**")
+        st.write(f"Abnormal region detected at {r['location']}")
+
+        st.write("**Assessment:**")
+        if r["risk"] > 70:
+            st.write("High probability of abnormal tissue")
+        else:
+            st.write("Low risk, no significant abnormality")
+
+        st.write("**Recommendation:**")
+        if r["risk"] > 70:
+            st.write("Recommend further medical examination")
+        else:
+            st.write("Routine monitoring suggested")
+
 # ---------------- PATIENTS ----------------
 elif page == "Patients":
-    st.title("👤 Patients")
+    st.title("👤 Patient Records")
 
-    st.dataframe({
-        "Name": ["John Doe", "Jane Smith"],
-        "Last Scan": ["30 Apr", "15 Apr"],
-        "Risk": ["82%", "30%"],
-        "Status": ["High", "Normal"]
-    })
+    if st.session_state.history:
+        st.dataframe(st.session_state.history)
+    else:
+        st.info("No records yet")
 
 # ---------------- ANALYTICS ----------------
 elif page == "Analytics":
-    st.title("🧪 Model Stats")
+    st.title("🧪 Model Performance")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Sensitivity", "91%")
